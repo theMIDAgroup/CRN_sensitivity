@@ -190,17 +190,9 @@ for im=1:numel(protein)
     rho_mut=cons_laws_mut*x_0_mut;
     max_counter=300;
     
-    x_e_mut=ris_mutated.x_e_mut;
-    %     switch protein_selected
-    %         case 'TP53'
-    %             ris=f_PNG_restart(x_0_mut, k_mut, S_mut, cons_laws_mut, rho_mut,...
-    %                 idx_basic_mut, v_mut, ind_one_mut, max_counter);
-    %             x_e_mut=ris.x;
-    %             ris_mutated.x_e_mut=x_e_mut;
-    %         otherwise
-    %
-    %
-    %     end
+    ris=f_PNG_restart(x_0_mut, k_mut, S_mut, cons_laws_mut, rho_mut,...
+        idx_basic_mut, v_mut, ind_one_mut, max_counter);
+    x_e_mut=ris.x;
     
     
     %% Sensitivity matrices for the mutated CRC-CRN
