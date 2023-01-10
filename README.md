@@ -7,7 +7,7 @@ The performed analysis and the employed Statistical Sensitivity Index are descri
 G. Biddau, G. Caviglia, M. Piana and S.Sommariva (submitted) SSI: A Statistical Sensitivity Index for Chemical Reaction Networks in cancer
 
 
-# For reproducing results from Sommariva et al. 2021:
+# For reproducing the results of the paper:
 
 Code is written in Matlab R2017b.
 
