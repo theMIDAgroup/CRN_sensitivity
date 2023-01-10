@@ -3,6 +3,9 @@ clc
 clear
 close all
 
+set(0, 'defaultAxesTickLabelInterpreter','latex'); 
+set(0, 'defaultLegendInterpreter','latex'); 
+
 addpath(fullfile('.', 'funcs'))
 folder_results = fullfile('.', 'results');
 if ~exist(folder_results, 'dir')
@@ -17,12 +20,6 @@ load(file_crn, 'new_CMIM')
 file_crc_crn = fullfile('data', 'CRC_CRN.mat');
 load(file_crc_crn, 'CMIM')
 list_reactions = CMIM.reactions; clear CMIM
-file_eq_phys = fullfile('data', 'results_physiological.mat');
-load(file_eq_phys, 'ris_phys')
-x_eq_phys = ris_phys.x_eq(1:end-2); clear ris_phys
-% Load equilibrium for the physiological network computed as in Sommariva
-% et al, Scientific Reports, 2021.
-
 %% Step 2. Import the initial data
 % number of species, reactions, conservation laws
 n_species = numel(new_CMIM.species.names);
@@ -38,9 +35,9 @@ x_0_phys=new_CMIM.species.std_initial_values;
 idx_basic_species = find(x_0_phys>0);
 idx_one=new_CMIM.matrix.ind_one;
 max_counter=300;
-% ris_phys=f_NLPC_restart(x_0_phys, k_values, Sm, cons_laws, cons_laws*x_0_phys,...
-%         idx_basic_species, vm,idx_one, max_counter, 0);
-% x_eq_phys = ris_phys.x;
+ris_phys=f_NLPC_restart(x_0_phys, k_values, Sm, cons_laws, cons_laws*x_0_phys,...
+        idx_basic_species, vm,idx_one, max_counter, 0);
+x_eq_phys = ris_phys.x;
 
 %% Step 3. Create the mutated CRC-CRN
 lof_mutation = {'APC', 'SMAD4'};
@@ -251,10 +248,11 @@ for im=1:numel(protein)
     
     subplot(2,2,im)
     
-    semilogy(aux_PCA_k(order_phys), 'k', 'linewidth', 2.5)
+    semilogy(aux_PCA_k(order_phys), 'k', 'linewidth', 3)
     hold on
-    semilogy(aux_PCA_k_phys_sort, 'r--', 'linewidth', 2)
-
+    semilogy(aux_PCA_k_phys_sort, 'r--', 'linewidth', 3)
+    ylim([10^-16, 10^0])
+    set(gca, 'Fontsize', 15)
 
     switch protein_selected
         case "Ras"
@@ -286,7 +284,8 @@ for im=1:numel(protein)
     title(aux_title)
 
 
-    legend('Mutated', 'Phys', 'Location', 'southwest')
+    lg = legend('Mutated', 'Phys', 'Location', 'southwest');
+    lg.FontSize = 18;
 
     %% Table for KRAS
 
