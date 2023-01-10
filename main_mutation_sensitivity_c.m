@@ -50,7 +50,7 @@ lof_mutation_type2 = {'TP53'};
 all_proteins = [gof_mutation, lof_mutation, lof_mutation_type2];
 
 protein=["Ras", "APC", "SMAD4", "TP53"];
-f_eff_mut_log_c = figure('units','normalized','outerposition',[0 0 1 1]);
+f_eff_mut_log_c = figure('units','normalized','outerposition',[0 0  0.75 1]);
 
 for im=1:numel(protein)
     protein_selected=protein(im);
