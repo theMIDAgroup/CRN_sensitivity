@@ -3,17 +3,27 @@ clc
 clear
 close all
 
+addpath(fullfile('.', 'funcs'))
+folder_results = fullfile('.', 'results');
+if ~exist(folder_results, 'dir')
+   mkdir(folder_results)
+end
+warning('off', 'all')
+
 %% Step 1. Load data
 % Load structure containing information on species and reactions
 file_crn = fullfile('data', 'CRC_CRN_nodrug.mat'); % Da cambiare in base a dove metti i file
-load(file_crn)
-file_eq = fullfile('data', 'results_physiological.mat');
-load(file_eq, 'ris_phys')
+load(file_crn, 'new_CMIM')
 file_crc_crn = fullfile('data', 'CRC_CRN.mat');
-load(file_crc_crn)
+load(file_crc_crn, 'CMIM')
+list_reactions = CMIM.reactions; clear CRC
+% file_eq_phys = fullfile('data', 'results_physiological.mat');
+% load(file_eq_phys, 'ris_phys')
+% x_eq_phys = ris_phys.x_eq(1:end-2); clear ris_phys
+% Load equilibrium for the physiological network computed as in Sommariva
+% et al, Scientific Reports, 2021.
 
 %% Step 2. Import the initial data
-
 % number of species, reactions, conservation laws
 n_species = numel(new_CMIM.species.names);
 n_reactions = size(new_CMIM.matrix.S, 2);
@@ -27,6 +37,11 @@ k_values=new_CMIM.rates.std_values;
 cons_laws=new_CMIM.matrix.Nl;
 x_0_phys=new_CMIM.species.std_initial_values;
 idx_basic_species = find(x_0_phys>0);
+max_counter=300;
+idx_one=new_CMIM.matrix.ind_one;
+% ris_phys=f_NLPC_restart(x_0_phys, k_values, Sm, cons_laws, cons_laws*x_0_phys,...
+%         idx_basic_species, vm,idx_one, max_counter, 0);
+% x_eq_phys = ris_phys.x;
 
 %% Step 3. Create the mutatated CRC
 lof_mutation = {'APC', 'SMAD4'};
@@ -35,45 +50,33 @@ lof_mutation_type2 = {'TP53'};
 all_proteins = [gof_mutation, lof_mutation, lof_mutation_type2];
 
 protein=["Ras", "APC", "SMAD4", "TP53"];
-
-
 f_eff_mut_log_c = figure('units','normalized','outerposition',[0 0 1 1]);
-
 
 for im=1:numel(protein)
     protein_selected=protein(im);
     
-    % 1. Load mutated equilibrium
+
     switch protein_selected
-        
         case 'APC'
-            ris_mutated= fullfile('data', 'results_mutation_APC_perc_0.0.mat');
-            load(ris_mutated)
             mut_lof=1;
             null_species=[];
             const_species=[];
         case 'SMAD4'
-            ris_mutated= fullfile('data', 'results_mutation_SMAD4_perc_0.0.mat');
-            load(ris_mutated)
             mut_lof=1;
             null_species=[];
             const_species='TFBIS';
         case 'TP53'
-            ris_mutated= fullfile('data', 'results_mutation_TP53_perc_0.0.mat');
-            load(ris_mutated)
             mut_lof=1;
             null_species=[];
             const_species=[];
         case 'Ras'
-            ris_mutated= fullfile('data', 'results_mutation_Ras_perc_0.0.mat');
-            load(ris_mutated)
             mut_lof=0;
             null_species_names=["RP_GAP_Ras_GTP", "RP_G_GABP_GAP_Ras_GTP", ...
                 "RP_ShP_G_GABP_GAP_Ras_GTP", "ERBP_GAP_Ras_GTP", ...
                 "ERBP_G_GABP_GAP_Ras_GTP", "ERBP_ShP_G_GABP_GAP_Ras_GTP", ...
                 "ERB3P_GAP_Ras_GTP", ...
                 "ERB3P_G_GABP_GAP_Ras_GTP", "ERB3P_ShP_G_GABP_GAP_Ras_GTP"];
-            [~,null_species]=ismember(null_species_names, CMIM.species.names);
+            [~,null_species]=ismember(null_species_names, new_CMIM.species.names);
             const_species=[];
     end
     
@@ -81,23 +84,22 @@ for im=1:numel(protein)
     % lof: the removable conservation law and the species involved
     % lof_type2: the removable conservation law and species
     % gof: redefine
-    
     switch protein_selected
         case lof_mutation
             x_0_mut=x_0_phys;
-            basic_rem=find(CMIM.species.names==string(protein_selected));
+            basic_rem=find(new_CMIM.species.names==string(protein_selected));
             idx_law_rem=find(cons_laws(:, basic_rem));
             sp_rem=find(cons_laws(idx_law_rem,:));
             sp_rem=sort(sp_rem);
             x_0_mut(sp_rem)=[];
             idx_basic_mut=find(x_0_mut>0);
-            
+ 
         case lof_mutation_type2
             x_0_mut=x_0_phys;
-            basic_rem=find(CMIM.species.names=="TP53_generator");
+            basic_rem=find(new_CMIM.species.names=="TP53_generator");
             idx_law_rem=find(cons_laws(:, basic_rem));
             sp_rem_names=["TP53_generator", "TP53", "TP53U", "MDM2P_TP53", "TP53_TFBSIV"];
-            [a, sp_rem]=ismember(sp_rem_names, CMIM.species.names);
+            [a, sp_rem]=ismember(sp_rem_names, new_CMIM.species.names);
             sp_rem=sort(sp_rem);
             x_0_mut(sp_rem)=[];
             idx_basic_mut=find(x_0_mut>0);
@@ -133,7 +135,6 @@ for im=1:numel(protein)
     S_mut=Sm;
     v_mut=vm;
     k_mut=k_values;
-    
     S_mut(sp_rem,:)=[];
     S_rem=Sm(sp_rem,:);
     
@@ -141,11 +142,14 @@ for im=1:numel(protein)
         
         case [lof_mutation, lof_mutation_type2]
             
-            
-            react_rem=find(sum(abs(CMIM.matrix.S(sp_rem,:))));
+            react_rem=find(sum(abs(new_CMIM.matrix.S(sp_rem,:))));
            
         case gof_mutation
-            react_rem=sort(ris_mutated.index_rc);
+            [~, aux] = ...
+                f_define_mutated_condition(protein_selected, ...
+                                    x_0_phys, k_values, new_CMIM, 0);
+            react_rem = find(aux==0);                   
+            % Define GoF as in Sommariva et al. Scientific Reports 2021
     end
      
     S_mut(:,react_rem)=[];
@@ -187,10 +191,8 @@ for im=1:numel(protein)
     
     
     rho_mut=cons_laws_mut*x_0_mut;
-    max_counter=300;
-    
-    ris=f_PNG_restart(x_0_mut, k_mut, S_mut, cons_laws_mut, rho_mut,...
-        idx_basic_mut, v_mut, ind_one_mut, max_counter);
+    ris=f_NLPC_restart(x_0_mut, k_mut, S_mut, cons_laws_mut, rho_mut,...
+        idx_basic_mut, v_mut, ind_one_mut, max_counter, 0);
     x_e_mut=ris.x;
    
     
@@ -226,9 +228,8 @@ for im=1:numel(protein)
     
    
     %% Comparison with the physiological CRC-CRN
-    idx_one=new_CMIM.matrix.ind_one;
     jacobian_v_phys = f_compute_analytic_jacobian_v(vm, n_species, idx_one);
-    x_values=ris_phys.x_eq(1:end-2);
+    x_values=x_eq_phys;
     
     eval_jac_phys = f_evaluate_jacobian_neworder(k_values, x_values, ...
         Sm, idx_basic_species, jacobian_v_phys, cons_laws);
@@ -287,6 +288,4 @@ for im=1:numel(protein)
       
     
 end
-
-
-    saveas(f_eff_mut_log_c, fullfile('.\results', 'single_gene_mutations_c.png'))
+saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
