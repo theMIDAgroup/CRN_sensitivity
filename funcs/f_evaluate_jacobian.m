@@ -2,7 +2,9 @@ function eval_jac = f_evaluate_jacobian(k, x, ...
                 Sm, idx_basic_species, jac_v, cons_laws)
 
 %% This function permits to evaluate the jacobian of f with respect to x.
-%% The result isn't necessarily in the form [S_2*Jacv; N]: the rows can be interchanged.
+%% The rows of f are in a one-to-one correspondence to the chemical species.
+%% The ones referred to the elemental species represents the conservation laws, while the ones referred to the non elemental species are the rows of S_2*v.
+%% The resulting jacobian will still be [S_2*Jacv; N], but with interchanged rows.
 
 %% Step 1. Initialization
 n_species = size(Sm, 1);
