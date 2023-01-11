@@ -258,7 +258,7 @@ for im=1:numel(protein)
     
     switch protein_selected
         case "Ras"
-            aux_title = 'GoF Ras (a)';
+            aux_title = 'GoF KRAS (a)';
         case "APC"
             aux_title = 'LoF APC (b)';
         case "SMAD4"
