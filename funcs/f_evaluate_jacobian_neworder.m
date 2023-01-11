@@ -1,6 +1,8 @@
 function eval_jac = f_evaluate_jacobian_neworder(k, x, ...
                 Sm, idx_basic_species, jac_v, cons_laws)
 
+%% This function permits to evaluate the jacobian of f with respect to x.
+%% The result is in the form [S_2*Jacv; N].
 
 %% Step 1. Initialization
 n_species = size(Sm, 1);
