@@ -2,7 +2,8 @@ function eval_jac = f_evaluate_jacobian(k, x, ...
                 Sm, idx_basic_species, jac_v, cons_laws)
 
 %% This function permits to evaluate the jacobian of f with respect to x.
-%% f is not required to be in the form [S_2*v; Nx-c], but the rows can be interchanged
+%% The result isn't necessarily in the form [S_2*Jacv; N]: the rows can be interchanged.
+
 %% Step 1. Initialization
 n_species = size(Sm, 1);
 eval_jac = zeros(n_species);
