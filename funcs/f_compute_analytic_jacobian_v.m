@@ -19,7 +19,3 @@ jacobian.k = k_formula;
 jacobian.factor = factor_formula; 
 
 end
-
-%% TODO possibili per velocizzare:
-% (1) Eliminare il for nella definizione di Jv
-% (2) Sfruttare le matrici sparse
