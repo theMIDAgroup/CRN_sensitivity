@@ -272,9 +272,9 @@ for im=1:numel(protein)
             ylabel('e^c_j')
         case 3
             ylabel('e^c_j')
-            xlabel('j')
+            xlabel('index j')
         case 4
-            xlabel('j')
+            xlabel('index j')
     end
     
     title(aux_title)
