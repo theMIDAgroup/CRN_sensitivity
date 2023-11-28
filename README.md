@@ -4,7 +4,7 @@ Matlab code for performing a sensitivity analysis of a chemical reaction newtork
 
 The performed analysis and the employed Statistical Sensitivity Index are described in the following manuscript.
 
-G. Biddau, G. Caviglia, M. Piana and S.Sommariva (submitted) SSI: A Statistical Sensitivity Index for Chemical Reaction Networks in cancer
+G. Biddau, G. Caviglia, M. Piana and S. Sommariva (submitted) SSI: A Statistical Sensitivity Index for Chemical Reaction Networks in cancer
 
 
 # For reproducing the results of the paper:
