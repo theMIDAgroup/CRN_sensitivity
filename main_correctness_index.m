@@ -27,43 +27,23 @@ x_0 = new_CMIM.species.std_initial_values;
 idx_basic_species = find(x_0>0);
 cons_laws = new_CMIM.matrix.Nl;
 rho=cons_laws*x_0;
+
+mut_lof=0;
 %% Step 3. Compute the values of the SSI
 
 %% 3.1. Compute equilibrium
 max_counter = 300;
-ris_phys = f_NLPC_restart(x_0, k_values, Sm, cons_laws, rho, idx_basic_species, ...
-           vm, ind_one, max_counter, 0);
-x_values = ris_phys.x;
-
+%ris_phys = f_NLPC_restart(x_0, k_values, Sm, cons_laws, rho, idx_basic_species, ...
+%           vm, ind_one, max_counter, 0);
+% x_values = ris_phys.x;
+file_x_phys = fullfile('results', 'x_phys.mat');
+load(file_x_phys)
+% save("./results/x_phys.mat","x_values")
 %% 3.2. Analytically compute the sensitivity matrix
 % Compute the analytic jacobian of v 
-jacobian_v = f_compute_analytic_jacobian_v(vm, n_species, ind_one);
-
-% Calculate the Jacobian of f with respect to x
-eval_jac = f_evaluate_jacobian_neworder(k_values, x_values, ...
-    Sm, idx_basic_species, jacobian_v, cons_laws);
-
-% Calculate the Jacobian of f with respect to k
-eval_jac_k=f_evaluate_jacobian_k(vm, x_values, Sm, idx_basic_species);
-
-% Calculate Jacobian of f with respect to c
-eval_jac_c=f_evaluate_jacobian_c(n_species, n_cons_laws,0);
-
-% Calculate sensitivity matrix w.r.t. rate constants k
-Jac_k_xeq= -inv(eval_jac)*eval_jac_k;
-
-% Calcolate sensitivity matrix w.r.t. conservation laws' constants c
-Jac_c_xeq= -inv(eval_jac)*eval_jac_c;
-
-%% 3.3. Compute SSI w.r.t. rate constants k 
-L_k=(1./x_values).*(Jac_k_xeq).*(k_values');
-[U_k,D_k,V_k]=svd(L_k);
-e_PCA_k =  ((V_k(:,1:n_species).^2)*diag(D_k.^2))/sum(diag(D_k.^2)); %se presi con il quadrato: e_j=(L^T*L)_{jj}/sum_k(lambda_k)
-
-%% 3.4. Compute SSI w.r.t. conservation lawss' constant c
-L_c=(1./x_values).*(Jac_c_xeq).*(rho');
-[U_c,D_c,V_c]=svd(L_c);
-e_PCA_c =  ((V_c(:,1:n_cons_laws).^2)*(diag(D_c).^2))/sum(diag(D_c).^2); %se presi con il quadrato: e_j=(L^T*L)_{jj}/sum_k(lambda_k)
+idx_sp=1:numel(x_values);
+[SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_values, k_values, ...
+                                 Sm, cons_laws, rho, idx_basic_species, vm, mut_lof);
 
 %% Graphs: 
 delta_j = [0 1 2 5 10 20];  
@@ -71,14 +51,55 @@ n_j = numel(delta_j);
 max_counter = 300;
 
 %% Fig 1a:
+% Histograms
+
+% bar
+figure
+numIntervals = 5;
+intervalWidth = (max(SSI_k)-min(SSI_k))/numIntervals;
+intervalWidth = (max(SSI_k)*(1+intervalWidth)-min(SSI_k))/numIntervals;
+x = 0:intervalWidth:max(SSI_k)*(1+intervalWidth);
+ncount=histc(SSI_k, x);
+relativefreq = 100*ncount(1:end-1)/length(SSI_k);
+%histogram(log10(relativefreq))
+b=bar(x(1:end-1), log10(relativefreq))
+set(gca, 'xtick', x(1:end-1))
+ylim([-1, 2.05])
+set(gca, 'ytick', -1:0.5:2)
+ylabel('Log10(Frequency (%))')
+close all
+
+% histogram k
+figure('units','normalized','outerposition',[0 0 0.8 0.8]);
+h=histogram(SSI_k, 50)%, 'Normalization', 'probability')
+set(gca,'YScale','log')
+
+% histogram
+figure('units','normalized','outerposition',[0 0 0.8 0.8]);
+SSI_k_log=SSI_k;
+SSI_k_log(find(SSI_k))=log(SSI_k(find(SSI_k)));
+h=histogram(SSI_k_log, 50)%, 'Normalization', 'probability')
+
+% histogram c
+figure('units','normalized','outerposition',[0 0 0.8 0.8]);
+h=histogram(SSI_c, 20)%, 'Normalization', 'probability')
+set(gca,'YScale','log')
+
+% histogram
+figure('units','normalized','outerposition',[0 0 0.8 0.8]);
+SSI_k_log=SSI_c;
+SSI_k_log(find(SSI_c))=log(SSI_k(find(SSI_c)));
+h=histogram(SSI_k_log, 20)%, 'Normalization', 'probability')
+%set(gca,'YScale','log')
+
 % Impact of increasing kinetic parameters referred to
 % maximum
 % minimum
 % median
 % SSI on global CRC-CRN
-[max_e_k, idx_k_high] = max(e_PCA_k); 
-[min_e_k, idx_k_low] = min(e_PCA_k);
-aux=median(e_PCA_k); idx_k_mean=find(e_PCA_k==aux);
+[max_e_k, idx_k_high] = max(SSI_k); 
+[min_e_k, idx_k_low] = min(SSI_k);
+aux=median(SSI_k); idx_k_mean=find(SSI_k==aux);
 
 x_eq_high_k = zeros(n_species, n_j);
 x_eq_low_k = zeros(n_species, n_j);
@@ -131,9 +152,9 @@ norm_delta_x_mean_k = vecnorm(delta_x_eq_mean_k, 2, 1);
 % minimum
 % median
 % SSI on global CRC-CRN
-[max_e_c, idx_c_high] = max(e_PCA_c);
-[min_e_c, idx_c_low] = min(e_PCA_c);
-aux=median(e_PCA_c); idx_c_mean=find(e_PCA_c==aux);
+[max_e_c, idx_c_high] = max(SSI_c);
+[min_e_c, idx_c_low] = min(SSI_c);
+aux=median(SSI_c); idx_c_mean=find(SSI_c==aux);
 
 x_eq_high_c = zeros(n_species, n_j);
 x_eq_low_c = zeros(n_species, n_j);
@@ -220,16 +241,12 @@ legend({'Maximum SSI';'Median SSI';'Minimum SSI'}, 'Location', 'EastOutside')
 selected_proteins = {'TP53'};
 [aux_, idx_proteins] = ismember(selected_proteins, new_CMIM.species.names);
 
-selpart_L = L_c(idx_proteins, :);
-[U, Sigma, V]=svd(selpart_L);
-selection=size(selpart_L,1);
-eing=diag(Sigma(1:selection, 1:selection));
-sum_eig=sum(eing.^2); 
-selpart_e_PCA=((V(:,1:selection).^2)*(eing.^2))/sum_eig;
+[~, selpart_SSI]=f_compute_SSI(idx_proteins, x_values, k_values, ...
+                                 Sm, cons_laws, rho, idx_basic_species, vm, mut_lof);
 
-[max_e, idx_c_high] = max(selpart_e_PCA);
-[min_e, idx_c_low] = min(selpart_e_PCA);
-aux=median(selpart_e_PCA); idx_c_mean=find(selpart_e_PCA==aux);
+[max_e, idx_c_high] = max(selpart_SSI);
+[min_e, idx_c_low] = min(selpart_SSI);
+aux=median(selpart_SSI); idx_c_mean=find(selpart_SSI==aux);
 
 selpart_x_eq_high = zeros(n_species, n_j);
 selpart_x_eq_low = zeros(n_species, n_j);
