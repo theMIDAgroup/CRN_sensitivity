@@ -46,7 +46,7 @@ x_values=x_eq_phys;
 idx_sp_phys=1:numel(x_values);
 rho_phys=cons_laws*x_0_phys;
 [SSI_k_phys, SSI_c_phys]=f_compute_SSI(idx_sp_phys, x_values, k_values, ...
-    Sm, cons_laws, rho_phys, idx_basic_species, vm, 0);
+    Sm, cons_laws, rho_phys, idx_basic_species, vm);
 
 
 %% Step 3. Create the mutatated CRC
@@ -63,6 +63,7 @@ for i=1:numel(protein)
     
     ris_mut.(protein{i}).x_eq=MIM_mut.species.x_eq;
     null_species=MIM_mut.species.null_species;
+    ris_mut.(protein{i}).react_rem=MIM_mut.info.react_rem;
     %% Sensitivity matrices for the mutated CRC-CRN
     x_eq=ris_mut.(protein{i}).x_eq;
     x_eq(null_species)=0;
@@ -82,22 +83,22 @@ for i=1:numel(protein)
     react_less=0;
     % delete less sensible reactions for KRAS
     if protein(i)=="Ras"
+        react_rem=ris_mut.Ras.react_rem;
         ind_react=1:1:n_reactions;
         ind_react_mut=ind_react;
         ind_react_mut(react_rem)=[];
-        less_sens=find(e_PCA_k<10^-30);
+        less_sens=find(ris.Ras.SSI_k<10^-30);
         react_less=numel(less_sens);
         ind_orig_less_sens=ind_react_mut(less_sens);
         disp(list_reactions.arrow(list_reactions.reactions2flux_rates(less_sens)))
         react_rem=sort([react_rem;ind_orig_less_sens']);
         aux_SSI_k(less_sens)=[];
     end
-    ris.react_rem=react_rem;
     aux_SSI_k_phys(react_rem)=[];
     [aux_SSI_k_phys_sort, order_phys]=sort(aux_SSI_k_phys, 'descend');
     
     
-    subplot(2,2,im)
+    subplot(2,2,i)
     
     semilogy(aux_SSI_k(order_phys), 'k', 'linewidth', 3)
     hold on
@@ -116,7 +117,7 @@ for i=1:numel(protein)
             aux_title = 'LoF TP53 (d)';
     end
     
-    switch im
+    switch i
         case 1
             ylabel('e^k_j')
             
@@ -149,11 +150,11 @@ for i=1:numel(protein)
     [aux_SSI_c_phys_sort, order_phys]=sort(aux_SSI_c_phys, 'descend');
     
     
-    subplot(2,2,im)
+    subplot(2,2,i)
     
     semilogy(aux_SSI_c(order_phys), 'k', 'linewidth', 3)
     hold on
-    semilogy(aux__SSI_c_phys_sort, 'r--', 'linewidth', 3)
+    semilogy(aux_SSI_c_phys_sort, 'r--', 'linewidth', 3)
     set(gca, 'Fontsize', 15)
     
     switch MIM_mut.info.name
@@ -167,7 +168,7 @@ for i=1:numel(protein)
             aux_title = 'LoF TP53 (d)';
     end
     
-    switch im
+    switch i
         case 1
             ylabel('e^c_j')
         case 3
@@ -184,10 +185,9 @@ for i=1:numel(protein)
     
     lg = legend('Mutated', 'Phys', 'Location', 'northeast');
     lg.FontSize = 18;
-    
-    saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
+   
 end
-
+saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
 %% Table for KRAS
 
 [values_abs_rel_diff, order_diff]=sort(abs((ris.Ras.SSI_k- SSI_k_phys)./SSI_k_phys), 'descend');
@@ -210,3 +210,13 @@ for ii = 1:row_table
 end
 fclose(fileID);
 
+
+
+row_table=10;
+for ii = 1:row_table
+    fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
+        strcat('R', num2str(order_diff(ii))), ...
+        string(list_reactions.details(order_diff(ii),1)), ...
+        (values_rel_diff));
+end
+fclose(fileID);
