@@ -43,54 +43,14 @@ load(file_x_phys)
 % Compute the analytic jacobian of v 
 idx_sp=1:numel(x_values);
 [SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_values, k_values, ...
-                                 Sm, cons_laws, rho, idx_basic_species, vm, mut_lof);
+                                 Sm, cons_laws, rho, idx_basic_species, vm);
 
-%% Graphs: 
+%% Computation of equilibrium for different choices of k and c
 delta_j = [0 1 2 5 10 20];  
 n_j = numel(delta_j);
 max_counter = 300;
 
-%% Fig 1a:
-% Histograms
-
-% bar
-figure
-numIntervals = 5;
-intervalWidth = (max(SSI_k)-min(SSI_k))/numIntervals;
-intervalWidth = (max(SSI_k)*(1+intervalWidth)-min(SSI_k))/numIntervals;
-x = 0:intervalWidth:max(SSI_k)*(1+intervalWidth);
-ncount=histc(SSI_k, x);
-relativefreq = 100*ncount(1:end-1)/length(SSI_k);
-%histogram(log10(relativefreq))
-b=bar(x(1:end-1), log10(relativefreq))
-set(gca, 'xtick', x(1:end-1))
-ylim([-1, 2.05])
-set(gca, 'ytick', -1:0.5:2)
-ylabel('Log10(Frequency (%))')
-close all
-
-% histogram k
-figure('units','normalized','outerposition',[0 0 0.8 0.8]);
-h=histogram(SSI_k, 50)%, 'Normalization', 'probability')
-set(gca,'YScale','log')
-
-% histogram
-figure('units','normalized','outerposition',[0 0 0.8 0.8]);
-SSI_k_log=SSI_k;
-SSI_k_log(find(SSI_k))=log(SSI_k(find(SSI_k)));
-h=histogram(SSI_k_log, 50)%, 'Normalization', 'probability')
-
-% histogram c
-figure('units','normalized','outerposition',[0 0 0.8 0.8]);
-h=histogram(SSI_c, 20)%, 'Normalization', 'probability')
-set(gca,'YScale','log')
-
-% histogram
-figure('units','normalized','outerposition',[0 0 0.8 0.8]);
-SSI_k_log=SSI_c;
-SSI_k_log(find(SSI_c))=log(SSI_k(find(SSI_c)));
-h=histogram(SSI_k_log, 20)%, 'Normalization', 'probability')
-%set(gca,'YScale','log')
+% 2 plots
 
 % Impact of increasing kinetic parameters referred to
 % maximum
@@ -146,12 +106,8 @@ norm_delta_x_low_k = vecnorm(delta_x_eq_low_k, 2, 1);
 delta_x_eq_mean_k = (x_eq_mean_k - x_eq_mean_k(:, 1)) ./ x_eq_mean_k(:, 1);
 norm_delta_x_mean_k = vecnorm(delta_x_eq_mean_k, 2, 1);
 
-%% Fig 1b:
-% Impact of increasing conservation laws' constants referred to
-% maximum
-% minimum
-% median
-% SSI on global CRC-CRN
+%%%%%
+
 [max_e_c, idx_c_high] = max(SSI_c);
 [min_e_c, idx_c_low] = min(SSI_c);
 aux=median(SSI_c); idx_c_mean=find(SSI_c==aux);
@@ -191,18 +147,48 @@ clear rates ris
 
 end
 
-delta_x_eq_high = (x_eq_high_c - x_eq_high_c(:, 1)) ./ x_eq_high_c(:, 1);
-norm_delta_x_high = vecnorm(delta_x_eq_high, 2, 1);
+delta_x_eq_high_c = (x_eq_high_c - x_eq_high_c(:, 1)) ./ x_eq_high_c(:, 1);
+norm_delta_x_high_c = vecnorm(delta_x_eq_high_c, 2, 1);
 
-delta_x_eq_low = (x_eq_low_c - x_eq_low_c(:, 1)) ./ x_eq_low_c(:, 1);
-norm_delta_x_low = vecnorm(delta_x_eq_low, 2, 1);
+delta_x_eq_low_c = (x_eq_low_c - x_eq_low_c(:, 1)) ./ x_eq_low_c(:, 1);
+norm_delta_x_low_c = vecnorm(delta_x_eq_low_c, 2, 1);
 
-delta_x_eq_mean = (x_eq_mean_c - x_eq_mean_c(:, 1)) ./ x_eq_mean_c(:, 1);
-norm_delta_x_mean = vecnorm(delta_x_eq_mean, 2, 1);
+delta_x_eq_mean_c = (x_eq_mean_c - x_eq_mean_c(:, 1)) ./ x_eq_mean_c(:, 1);
+norm_delta_x_mean_c = vecnorm(delta_x_eq_mean_c, 2, 1);
 
-% Figures
-figure('units','normalized','outerposition',[0 0 1 0.7]);
-subplot(1, 2 ,1)
+
+%% Fig 2 paper:
+
+figure_SSI_corrctness=figure('units','normalized','outerposition',[0 0  0.75 1]);
+
+% 1. Histograms
+
+% 1.1 rates
+subplot(2,2,1)
+binedges=-16:1:-1;
+histogram(log10(SSI_k), 'BinEdges', binedges, 'Normalization', 'percentage')
+yticks([0 0.1, 0.20, 0.30, 0.40 0.5])
+yticklabels({'0', '10', '20', '30', '40', '50'})
+xticks([-20 -15 -10 -5 -1])
+xticklabels({'$10^{-20}$', '$10^{-15}$', '$10^{-10}$', '$10^{-5}$', '$10^{-1}$'})
+ylabel('%')
+xlabel('log(e_j^k)')
+
+% 1.2 conservation laws
+
+subplot(2,2,2)
+binedges=-3.25:0.2:-1;
+histogram(log10(SSI_c), 'BinEdges', binedges, 'Normalization', 'probability')
+yticks([0, 0.05, 0.1, 0.15, 0.20, 0.25])
+yticklabels({'0', '5', '10', '15', '20', '25'})
+xticks(-3: 1 : -1)
+xticklabels({'$10^{-3}$', '$10^{-2}$', '$10^{-1}$'})
+ylabel('%')
+xlabel('log(e_j^c)')
+
+% Plots
+% 2.1 rates
+subplot(2, 2 ,3)
 plot(delta_j, norm_delta_x_high_k, 'k-*', 'Linewidth', 3)
 hold on
 plot(delta_j, norm_delta_x_mean_k, 'b-*', 'Linewidth', 3)
@@ -213,24 +199,27 @@ xlabel('$\hat{\Delta} k$', 'Interpreter', 'Latex')
 ylabel('$\sqrt{Q(\hat{\Delta} k)}$', 'Interpreter', 'Latex')
 xticks(delta_j);
 my_symlog('y')
-set(gca, 'Fontsize', 15)
+set(gca, 'Fontsize', 10)
 grid on
 
-subplot(1,2, 2)
-plot(delta_j, norm_delta_x_high, 'k-*', 'Linewidth', 3)
+% 2.2 conservation laws
+subplot(2,2, 4)
+plot(delta_j, norm_delta_x_high_c, 'k-*', 'Linewidth', 3)
 hold on
-plot(delta_j, norm_delta_x_mean, 'b-*', 'Linewidth', 3)
+plot(delta_j, norm_delta_x_mean_c, 'b-o', 'Linewidth', 3)
 hold on
-plot(delta_j, norm_delta_x_low, 'r-*', 'Linewidth', 3)
+plot(delta_j, norm_delta_x_low_c, 'r-x', 'Linewidth', 3)
 my_symlog('y')
 % set(gca, 'Yscale', 'log')
 xlabel('$\hat{\Delta} c$', 'Interpreter', 'Latex')
 ylabel('$\sqrt{Q(\hat{\Delta} c)}$', 'Interpreter', 'Latex')
-set(gca, 'Fontsize', 15)
+set(gca, 'Fontsize', 10)
 xticks(delta_j)
 grid on
-legend({'Maximum SSI';'Median SSI';'Minimum SSI'}, 'Location', 'EastOutside')
-
+L=legend({'Maximum SSI';'Median SSI';'Minimum SSI'},'Location','NorthOutside', 'Orientation','horizontal');
+L.Position=[0.5, 0.479, 0.001, 0.001];
+%L.Color='none';
+%L.EdgeColor='none';
 %% Fig 2:
 % Impact of increasing kinetic parameters referred to
 % maximum
@@ -308,4 +297,4 @@ xlabel('$\hat{\Delta} c$', 'Interpreter', 'Latex')
 ylabel('$\sqrt{Q(\hat{\Delta} c)}$', 'Interpreter', 'Latex')
 set(gca, 'Fontsize', 15)
 xticks(delta_j)
-legend({'Maximum SSI';'Median SSI';'Minimum SSI'},'Location','NorthEastOutside')
+legend({'Maximum SSI';'Median SSI';'Minimum SSI'},'Location','NorthOutside')
