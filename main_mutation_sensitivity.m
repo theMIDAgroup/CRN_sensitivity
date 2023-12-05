@@ -63,15 +63,23 @@ for i=1:numel(protein)
     
     ris_mut.(protein{i}).x_eq=MIM_mut.species.x_eq;
     null_species=MIM_mut.species.null_species;
+    sp_rem=MIM_mut.species.sp_rem;
+    sp_to_rem=sort([null_species, sp_rem]);
     ris_mut.(protein{i}).react_rem=MIM_mut.info.react_rem;
     %% Sensitivity matrices for the mutated CRC-CRN
     x_eq=ris_mut.(protein{i}).x_eq;
     x_eq(null_species)=0;
     idx_sp=find(x_eq);
+    ris_mut.(protein{i}).n_basic_mut=MIM_mut.species.n_basic_mut;
+    ris_mut.(protein{i}).S=MIM_mut.matrix.S;
+    ris_mut.(protein{i}).idx_law_rem=MIM_mut.species.idx_law_rem;
     
+    ris_mut.(protein{i}).idx_basic_species=MIM_mut.species.idx_basic_species;
+
     [ris.(protein{i}).SSI_k, ris.(protein{i}).SSI_c]=f_compute_SSI(idx_sp, x_eq, MIM_mut.rates.std_values,...
-        MIM_mut.matrix.S, MIM_mut.matrix.Nl, MIM_mut.matrix.rho, ...
+        ris_mut.(protein{i}).S, MIM_mut.matrix.Nl, MIM_mut.matrix.rho, ...
         MIM_mut.species.idx_basic_species, MIM_mut.matrix.v);
+    clear MIM_mut
 end
 %% Graphs
 % SSI on k
@@ -80,9 +88,10 @@ f_eff_mut_log_k = figure('units','normalized','outerposition',[0 0  0.75 1]);
 for i=1:numel(protein)
     aux_SSI_k_phys=SSI_k_phys;
     aux_SSI_k=ris.(protein{i}).SSI_k;
-    react_less=0;
+    react_rem=ris_mut.(protein{i}).react_rem;
     % delete less sensible reactions for KRAS
-    if protein(i)=="Ras"
+    if string(protein(i))=="Ras"
+        disp(protein(i))
         react_rem=ris_mut.Ras.react_rem;
         ind_react=1:1:n_reactions;
         ind_react_mut=ind_react;
@@ -93,7 +102,9 @@ for i=1:numel(protein)
         disp(list_reactions.arrow(list_reactions.reactions2flux_rates(less_sens)))
         react_rem=sort([react_rem;ind_orig_less_sens']);
         aux_SSI_k(less_sens)=[];
+        disp(react_rem)
     end
+    disp(react_rem)
     aux_SSI_k_phys(react_rem)=[];
     [aux_SSI_k_phys_sort, order_phys]=sort(aux_SSI_k_phys, 'descend');
     
@@ -131,8 +142,8 @@ for i=1:numel(protein)
     end
     
     
-    xlim([1 size(MIM_mut.matrix.S,2)-react_less])
-    xticks(0:200:size(MIM_mut.matrix.S,2)-react_less) % controllare
+    xlim([1 size(ris_mut.(protein{i}).S,2)-numel(react_rem)])
+    xticks(0:200:size(ris_mut.(protein{i}).S,2)-numel(react_rem)) % controllare
     title(aux_title)
     
     lg = legend('Mutated', 'Phys', 'Location', 'southwest');
@@ -146,7 +157,7 @@ f_eff_mut_log_c = figure('units','normalized','outerposition',[0 0  0.75 1]);
 for i=1:numel(protein)
     aux_SSI_c_phys=SSI_c_phys;
     aux_SSI_c=ris.(protein{i}).SSI_c;
-    aux_SSI_c_phys(MIM_mut.species.idx_law_rem)=[];
+    aux_SSI_c_phys(ris_mut.(protein{i}).idx_law_rem)=[];
     [aux_SSI_c_phys_sort, order_phys]=sort(aux_SSI_c_phys, 'descend');
     
     
@@ -157,7 +168,7 @@ for i=1:numel(protein)
     semilogy(aux_SSI_c_phys_sort, 'r--', 'linewidth', 3)
     set(gca, 'Fontsize', 15)
     
-    switch MIM_mut.info.name
+    switch protein(i)
         case "Ras"
             aux_title = 'GoF KRAS (a)';
         case "APC"
@@ -179,8 +190,8 @@ for i=1:numel(protein)
     end
     
     title(aux_title)
-    xlim([1 MIM_mut.species.n_basic_mut])
-    xticks(0:20:MIM_mut.species.n_basic_mut)
+    xlim([1 ris_mut.(protein{i}).n_basic_mut])
+    xticks(0:20:ris_mut.(protein{i}).n_basic_mut)
     ylim([10^-4, 1.1*10^-1])
     
     lg = legend('Mutated', 'Phys', 'Location', 'northeast');
@@ -189,7 +200,7 @@ for i=1:numel(protein)
 end
 saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
 %% Table for KRAS
-
+SSI_k_phys(ris_mut.Ras.react_rem)=[];
 [values_abs_rel_diff, order_diff]=sort(abs((ris.Ras.SSI_k- SSI_k_phys)./SSI_k_phys), 'descend');
 values_rel_diff=(ris.Ras.SSI_k-SSI_k_phys)./SSI_k_phys;
 ind_react(ris.Ras.react_rem)=[]; %tolgo le reazioni rimosse
@@ -201,14 +212,14 @@ table_file=fullfile(folder_results, 'reactions_Ras.txt');
 fileID = fopen(table_file, 'w');
 disp(['Writing on ', table_file, '...'])
 
-row_table=10;
-for ii = 1:row_table
-    fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
-        strcat('R', num2str(order_diff(ii))), ...
-        string(list_reactions.details(order_diff(ii),1)), ...
-        (values_rel_diff((order_diff(ii)))));
-end
-fclose(fileID);
+% row_table=10;
+% for ii = 1:row_table
+%     fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
+%         strcat('R', num2str(order_diff(ii))), ...
+%         string(list_reactions.details(order_diff(ii),1)), ...
+%         (values_rel_diff((order_diff(ii)))));
+% end
+% fclose(fileID);
 
 
 
