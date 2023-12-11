@@ -7,7 +7,7 @@ set(0, 'defaultAxesTickLabelInterpreter','latex');
 set(0, 'defaultLegendInterpreter','latex');
 
 addpath(fullfile('.', 'funcs'))
-folder_results = fullfile('.', 'results');
+folder_results = '.\results';
 if ~exist(folder_results, 'dir')
     mkdir(folder_results)
 end
@@ -27,6 +27,7 @@ n_species = numel(new_CMIM.species.names);
 n_reactions = size(new_CMIM.matrix.S, 2);
 n_cons_laws = size(new_CMIM.matrix.Nl, 1);
 
+method_new=1; % boolean to specigy the method to compute lof
 
 % define the new matrices and vectors of the system
 Sm = new_CMIM.matrix.S;
@@ -59,7 +60,11 @@ protein=["Ras", "APC", "SMAD4", "TP53"];
 
 for i=1:numel(protein)
     
-    MIM_mut=f_compute_eq_mutated_CRN(protein(i), new_CMIM, idx_basic_species, x_0_phys, k_values);
+    if method_new
+        MIM_mut=f_compute_eq_mutated_CRN_new_way(protein(i), new_CMIM, idx_basic_species, x_0_phys, k_values);
+    else 
+        MIM_mut=f_compute_eq_mutated_CRN(protein(i), new_CMIM, idx_basic_species, x_0_phys, k_values);
+    end
     
     ris_mut.(protein{i}).x_eq=MIM_mut.species.x_eq;
     null_species=MIM_mut.species.null_species;
@@ -200,34 +205,39 @@ for i=1:numel(protein)
 end
 saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
 %% Table for KRAS
+ind_react=1:1:n_reactions;
+SSI_k_phys_saved=SSI_k_phys;
 SSI_k_phys(ris_mut.Ras.react_rem)=[];
 [values_abs_rel_diff, order_diff]=sort(abs((ris.Ras.SSI_k- SSI_k_phys)./SSI_k_phys), 'descend');
 values_rel_diff=(ris.Ras.SSI_k-SSI_k_phys)./SSI_k_phys;
-ind_react(ris.Ras.react_rem)=[]; %tolgo le reazioni rimosse
+ind_react(ris_mut.Ras.react_rem)=[]; %tolgo le reazioni rimosse
 
 table(SSI_k_phys(order_diff), ris.Ras.SSI_k(order_diff), values_rel_diff(order_diff))
 table(string(list_reactions.details(ind_react(order_diff),1)), values_rel_diff(order_diff), 'VariableNames', {'Reactions', 'RelDiffSSI'})
 
-table_file=fullfile(folder_results, 'reactions_Ras.txt');
+table_file=fullfile(folder_results, 'reactions_Ras_2.txt');
 fileID = fopen(table_file, 'w');
 disp(['Writing on ', table_file, '...'])
-
-% row_table=10;
-% for ii = 1:row_table
-%     fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
-%         strcat('R', num2str(order_diff(ii))), ...
-%         string(list_reactions.details(order_diff(ii),1)), ...
-%         (values_rel_diff((order_diff(ii)))));
-% end
-% fclose(fileID);
-
-
 
 row_table=10;
 for ii = 1:row_table
     fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
         strcat('R', num2str(order_diff(ii))), ...
         string(list_reactions.details(order_diff(ii),1)), ...
-        (values_rel_diff));
+        (values_rel_diff((order_diff(ii)))));
 end
 fclose(fileID);
+
+
+
+row_table=10;
+for ii = 1:row_table
+    % fprintf(fileID, '%s & \\verb| %s | & %1.2e  \\\\ \\hline \n', ...
+    %     strcat('R', num2str(order_diff(ii))), ...
+    %     string(list_reactions.details(order_diff(ii),1)), ...
+    %     (values_rel_diff(order_diff)));
+    disp(strcat('R', num2str(order_diff(ii))))
+    disp(string(list_reactions.details(order_diff(ii),1)))
+    disp(values_rel_diff(order_diff(ii)))
+end
+% fclose(fileID);
