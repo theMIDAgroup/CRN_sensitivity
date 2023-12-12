@@ -235,7 +235,7 @@ ind_react(ris_mut.Ras.react_rem)=[]; %tolgo le reazioni rimosse
 table(SSI_k_phys(order_diff), ris.Ras.SSI_k(order_diff), values_rel_diff(order_diff))
 table(string(list_reactions.details(ind_react(order_diff),1)), values_rel_diff(order_diff), 'VariableNames', {'Reactions', 'RelDiffSSI'})
 
-table_file=fullfile(folder_results, 'reactions_Ras_2.txt');
+table_file=fullfile(folder_results, 'reactions_Ras.txt');
 fileID = fopen(table_file, 'w');
 disp(['Writing on ', table_file, '...'])
 
