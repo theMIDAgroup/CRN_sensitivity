@@ -27,7 +27,7 @@ n_species = numel(new_CMIM.species.names);
 n_reactions = size(new_CMIM.matrix.S, 2);
 n_cons_laws = size(new_CMIM.matrix.Nl, 1);
 
-method_new=1; % boolean to specigy the method to compute lof
+method_new=0; % boolean to specigy the method to compute lof
 
 % define the new matrices and vectors of the system
 Sm = new_CMIM.matrix.S;
@@ -66,14 +66,24 @@ for i=1:numel(protein)
         MIM_mut=f_compute_eq_mutated_CRN(protein(i), new_CMIM, idx_basic_species, x_0_phys, k_values);
     end
     
+    ris_mut.(protein{i}).x_0=MIM_mut.species.x_0;
     ris_mut.(protein{i}).x_eq=MIM_mut.species.x_eq;
     null_species=MIM_mut.species.null_species;
     sp_rem=MIM_mut.species.sp_rem;
     sp_to_rem=sort([null_species, sp_rem]);
     ris_mut.(protein{i}).react_rem=MIM_mut.info.react_rem;
+    if method_new
+        ris_mut.(protein{i}).react_rem_lof=MIM_mut.info.react_rem_lof;
+    end
     %% Sensitivity matrices for the mutated CRC-CRN
     x_eq=ris_mut.(protein{i}).x_eq;
-    x_eq(null_species)=0;
+    if method_new
+        species_rem=sp_to_rem;
+    else
+        species_rem=null_species;
+    end
+   
+    x_eq(species_rem)=0;
     idx_sp=find(x_eq);
     ris_mut.(protein{i}).n_basic_mut=MIM_mut.species.n_basic_mut;
     ris_mut.(protein{i}).S=MIM_mut.matrix.S;
@@ -94,6 +104,10 @@ for i=1:numel(protein)
     aux_SSI_k_phys=SSI_k_phys;
     aux_SSI_k=ris.(protein{i}).SSI_k;
     react_rem=ris_mut.(protein{i}).react_rem;
+    if method_new
+        react_rem_2=ris_mut.(protein{i}).react_rem_lof;
+        react_rem=sort([react_rem; react_rem_2], 'ascend');
+    end
     % delete less sensible reactions for KRAS
     if string(protein(i))=="Ras"
         disp(protein(i))
@@ -106,11 +120,14 @@ for i=1:numel(protein)
         ind_orig_less_sens=ind_react_mut(less_sens);
         disp(list_reactions.arrow(list_reactions.reactions2flux_rates(less_sens)))
         react_rem=sort([react_rem;ind_orig_less_sens']);
-        aux_SSI_k(less_sens)=[];
+        aux_SSI_k(less_sens)=[];            
         disp(react_rem)
     end
     disp(react_rem)
     aux_SSI_k_phys(react_rem)=[];
+    if method_new && ismember(protein(i), [lof_mutation, lof_mutation_type2])
+        aux_SSI_k(react_rem)=[];
+    end
     [aux_SSI_k_phys_sort, order_phys]=sort(aux_SSI_k_phys, 'descend');
     
     
@@ -146,7 +163,6 @@ for i=1:numel(protein)
             
     end
     
-    
     xlim([1 size(ris_mut.(protein{i}).S,2)-numel(react_rem)])
     xticks(0:200:size(ris_mut.(protein{i}).S,2)-numel(react_rem)) % controllare
     title(aux_title)
@@ -163,6 +179,10 @@ for i=1:numel(protein)
     aux_SSI_c_phys=SSI_c_phys;
     aux_SSI_c=ris.(protein{i}).SSI_c;
     aux_SSI_c_phys(ris_mut.(protein{i}).idx_law_rem)=[];
+    if method_new && ismember(protein(i), [lof_mutation, lof_mutation_type2])
+       aux_SSI_c(ris_mut.(protein{i}).idx_law_rem)=[];
+    end
+    
     [aux_SSI_c_phys_sort, order_phys]=sort(aux_SSI_c_phys, 'descend');
     
     
