@@ -2,6 +2,8 @@ clc
 clear
 close all
 
+%% FAI INDICI TOTALI!!!
+
 %% This code computes the SSIs for a CRC-CRN when drugs DBF and TMT are inserted
 
 set(0, 'defaultAxesTickLabelInterpreter','latex');
@@ -31,6 +33,7 @@ perc = 0;
 
 %% Step 2. Load and store data
 load(file_mim_clean)
+load(file_ris_phys)
 
 % physiological case
 rate_constants_phys = CMIM.rates.std_values;
@@ -54,9 +57,9 @@ init_drug2 = 240;
 %% Step 2. Compute physiological equilibrium
 rho=cons_laws*x_0_phys;
 
-ris_phys = f_NLPC_restart(x_0_phys, rate_constants_phys, Sm, cons_laws, rho, idx_basic_species, ...
-           vm, ind_one, max_counter, 0);
-x_eq_phys=ris_phys.x;
+% ris_phys = f_NLPC_restart(x_0_phys, rate_constants_phys, Sm, cons_laws, rho, idx_basic_species, ...
+%            vm, ind_one, max_counter, 0);
+x_eq_phys=x_values; %ris_phys.x;
 
 %% Step 3. Simulate mutation + drugs
 % 3.1. Add drugs to CRN
@@ -79,7 +82,7 @@ k = [k1_drug k2_drug k3_drug k4_drug k5_drug k6_drug k7_drug k8_drug];
 [~, idx_d2] = ismember(drug2, CMIM_drug.species.names);
 idx_basic_species_drug = [idx_basic_species; idx_d1; idx_d2];
 
-x_0_combo = padarray(x_eq_phys,[n_new_species 0],0,'post');
+x_0_combo = [x_eq_phys; zeros(n_new_species, 1)];
 x_0_combo(idx_d1) = init_drug1; x_0_combo(idx_d2) = init_drug2;
 rate_constants_combo = rate_constants_phys; rate_constants_combo(idx_k) = k;
 
@@ -98,6 +101,8 @@ v_drug=CMIM_drug.matrix.v;
 % deleting columns from S and entries from v and k refereed to all the reactions ivolved into RAS mutation
 
 MIM_mut=f_compute_eq_mutated_CRN("Ras", CMIM_drug, idx_basic_species_drug, x_0_combo, rate_constants_combo);
+
+react_rem=MIM_mut.info.react_rem;
 x_e_drug_2=MIM_mut.species.x_eq;
 null_species=MIM_mut.species.null_species;
 
@@ -113,76 +118,102 @@ idx_basic_species_mut_drug=MIM_mut.species.idx_basic_species;
 v_mut_drug=MIM_mut.matrix.v;
 rho_mut_drug=cons_laws_mut_drug*x_0_combo;
 
-[SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_e_drug_2, k_mut_drug,...
-                                    S_mut_drug, cons_laws_mut_drug, rho_mut_drug, ...
+%% SSI TOTALI
+SSI=f_compute_SSI_tot(idx_sp, x_e_drug_2, k_mut_drug,...
+                                    S_mut_drug, cons_laws_mut_drug, rho_mut_drug,...
                                     idx_basic_species_mut_drug, v_mut_drug);
-
-%% Step 5. Figure
-f_ssi_phys_vs_drug = figure('units','normalized','outerposition',[0 0  0.75 1]);
-
-% compute physiological SSI
-react_rem=MIM_mut.info.react_rem;
-
-x_values=x_eq_phys;
-idx_sp_phys=1:numel(x_values);
-rho_phys=cons_laws*x_0_phys;
-
-[SSI_k_phys, SSI_c_phys]=f_compute_SSI(idx_sp_phys, x_values, rate_constants_phys, ...
-                                           Sm, cons_laws, rho_phys, idx_basic_species, vm);
-
-SSI_k_phys(react_rem)=[];
-
-% figures
-
-[aux_PCA_k_phys_sort, order_phys]=sort(SSI_k_phys, 'descend');
-
-subplot(1,2,1)
-semilogy(SSI_k(order_phys), 'k', 'linewidth', 3)
-hold on
-semilogy(aux_PCA_k_phys_sort, 'r--', 'linewidth', 3)
-ylim([10^-16, 10^0])
-
-[aux_PCA_c_phys_sort, order_phys]=sort(SSI_c_phys, 'descend');
-subplot(1,2,2)
-semilogy(SSI_c(order_phys), 'k', 'linewidth', 3)
-hold on
-semilogy([aux_PCA_c_phys_sort;0;0], 'r--', 'linewidth', 3)
-
-%% tables
-
-arrow=CMIM_drug.reactions.arrow;
-react2flux=CMIM_drug.reactions.reactions2flux_rates;
-arrow(react2flux(react_rem))=[];
-react2flux(react_rem)=[];
-details=CMIM_drug.reactions.details;
-details(react_rem,:)=[];
-for i=1:numel(react2flux)
-    sumflux=sum(react2flux(i)>react_rem);
-    if(sumflux>0)
-        react2flux(i)=react2flux(i)-sumflux;
-    end
-end
-
-[max_values_SSI_k, ord_max_SSI_k]=sort(SSI_k,'descend');
-[max_values_SSI_c, ord_max_SSI_c]=sort(SSI_c,'descend');
-str=strings(10,2);
-for i=1:10
-    str(i,1)=convertCharsToStrings(arrow{react2flux(ord_max_SSI_k(i))});
-    str(i,2)=convertCharsToStrings(details{ord_max_SSI_k(i),2});
-end
-T_k=table(str, max_values_SSI_k(1:10), 'VariableNames', {'Reaction List', 'SSI'});
-
-str=strings(10,1);
-for i=1:10
-    str(i,1)=convertCharsToStrings(CMIM_drug.species.names{idx_basic_species_drug(ord_max_SSI_c(i))});
-end
-T_c=table(str, max_values_SSI_c(1:10), 'VariableNames', {'Basic Species List', 'SSI'});
-
-%% ERKPP
+%% SSI SINGOLI
+[SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_e_drug_2, k_mut_drug,...
+                                    S_mut_drug, cons_laws_mut_drug, rho_mut_drug,...
+                                    idx_basic_species_mut_drug, v_mut_drug);
+%% PROVA PER ERKPP
+% ERKPP
 selected_proteins = {'ERKPP'};
 [aux_, idx_proteins] = ismember(selected_proteins, CMIM_drug.species.names);
 
+selpart_SSI=f_compute_SSI_tot(idx_proteins,  x_e_drug_2, k_mut_drug,...
+                                    S_mut_drug, cons_laws_mut_drug, rho_mut_drug, idx_basic_species_drug, v_mut_drug);
 
-[selpart_SSI_k, selpart_SSI_c]=f_compute_SSI(idx_proteins,  x_e_drug_2, k_mut_drug,...
-                                    S_mut_drug, cons_laws_mut_drug, rho_mut_drug, ...
-                                    idx_basic_species_mut_drug, v_mut_drug);
+%% Step 5. Tables
+
+kk=append('R', string(1:numel(k_mut_drug)+numel(react_rem)));
+cc=append('CL ', string(1:numel(idx_basic_species_drug)));
+
+param=[kk(end-7:end)'; cc(end-1:end)'];
+SSI_param=[SSI(numel(k_mut_drug)-7:numel(k_mut_drug)); SSI(end-1:end)];
+
+[value_SSI, ind_ord_SSI]=sort(SSI_param, 'descend');
+SSI_param=SSI_param(ind_ord_SSI, :);
+param_ord=param(ind_ord_SSI);
+
+table(param_ord, SSI_param, 'VariableNames',{'Kinetic Parameter h', 'e_j^h'})
+
+table_file=fullfile(folder_results, 'DBF_TMT_SSI.txt');
+fileID = fopen(table_file, 'w');
+disp(['Writing on ', table_file, '...'])
+
+row_table=numel(param_ord);
+for ii = 1:row_table
+    fprintf(fileID, '%s &  %1.2e  \\\\ \\hline \n', ...
+        string(param_ord(ii)), string(SSI_param(ii)));
+end
+fclose(fileID);
+
+% ERKPP
+selpart_SSI_param=[selpart_SSI(numel(k_mut_drug)-7:numel(k_mut_drug)); selpart_SSI(end-1:end)];
+
+[value_SSI, selpart_ind_ord_SSI]=sort(selpart_SSI_param, 'descend');
+selpart_SSI_param=selpart_SSI_param(selpart_ind_ord_SSI, :);
+selpart_param_ord=param(selpart_ind_ord_SSI);
+
+table(selpart_param_ord, selpart_SSI_param, 'VariableNames',{'Kinetic Parameter h', 'e_j^h'})
+
+table_file=fullfile(folder_results, 'DBF_TMT_selpart_SSI.txt');
+fileID = fopen(table_file, 'w');
+disp(['Writing on ', table_file, '...'])
+
+row_table=numel(selpart_param_ord);
+for ii = 1:row_table
+    fprintf(fileID, '%s &  %1.2e  \\\\ \\hline \n', ...
+        string(selpart_param_ord(ii)), string(selpart_SSI_param(ii)));
+end
+fclose(fileID);
+
+%% FIGURA DA MODIFICARE
+
+[aa, bb]=sort(SSI_k, 'descend');
+[cc, TMT]=ismember((numel(k_mut_drug)-5):numel(k_mut_drug), bb);
+[dd, DBF]=ismember((numel(k_mut_drug)-7):(numel(k_mut_drug)-6), bb);
+figure
+subplot(2,1,1)
+semilogy(aa)
+hold on
+semilogy(DBF, aa(DBF), '*', 'MarkerSize', 12)
+hold on
+semilogy(TMT, aa(TMT), '*', 'MarkerSize', 12)
+
+legend('SSI k', 'DBF', 'TMT')
+xlabel('j')
+ylabel('e_j^k')
+title('SSI k per TMT+DBF')
+
+[aa, bb]=sort(SSI_c, 'descend');
+[cc, TMT]=ismember(83, bb);
+[dd, DBF]=ismember(82, bb);
+
+
+subplot(2,1,2)
+semilogy(aa)
+hold on
+semilogy(DBF, aa(DBF), '*', 'MarkerSize', 12)
+hold on
+semilogy(TMT, aa(TMT), '*', 'MarkerSize', 12)
+legend('SSI c', 'DBF', 'TMT')
+xlabel('j')
+ylabel('e_j^c')
+title('SSI c per TMT+DBF')
+
+% confrontiamo i due farmaci
+% CL: chiara e coerente
+% R: che significato ha? -> far vedere solo le c
+% prova con dinamica?
