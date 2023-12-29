@@ -1,0 +1,3 @@
+names	std_in_value	units	is_constant
+DBF	50	nanomole	0
+DBF_Raf	0	nanomole	0
