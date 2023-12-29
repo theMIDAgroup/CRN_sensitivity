@@ -1,0 +1,4 @@
+names	std_in_value	units	is_constant
+TMT	0	nanomole	0
+TMT_MEKPP	0	nanomole	0
+TMT_ERK_MEKPP	0	nanomole	0
