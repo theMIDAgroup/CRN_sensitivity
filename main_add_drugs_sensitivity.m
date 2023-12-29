@@ -2,8 +2,6 @@ clc
 clear
 close all
 
-%% FAI INDICI TOTALI!!!
-
 %% This code computes the SSIs for a CRC-CRN when drugs DBF and TMT are inserted
 
 set(0, 'defaultAxesTickLabelInterpreter','latex');
@@ -12,28 +10,32 @@ warning('off', 'all')
 
 addpath('./funcs')
 
-%% Step 1. Define general parameters
+%% 1. Define general parameters
 % 1.1. Data
 target_folder = 'data';
 file_mim_clean = fullfile(target_folder, 'CRC_CRN_nodrug_complete.mat');
 
 % 1.2. Folders and files
-folder_results = 'results';
-file_ris_phys = fullfile(folder_results, 'x_phys.mat');
 
-folder_results_drugs = 'results/drugs';
-file_ris_drugs = fullfile(folder_results_drugs, 'nlpc_DBF_TMT_on_mut_Ras_50.00_240.00.mat');
+folder_results = 'results/drugs';
+if exist(folder_results, 'dir')
+    mkdir(folder_results)
+end
 
 % 1.3. Starting mutation and drugs
 mut_prot = 'Ras';
 drug1 = 'DBF'; drug2 = 'TMT';
 drug = strcat(drug1, '_', drug2);
+init_drug1 = 50;
+init_drug2 = 240;
 mut_lof=0;
 perc = 0;
 
-%% Step 2. Load and store data
+% 1.4. Set NLPC parameter
+max_counter = 500;
+
+%% 2. Load and store data
 load(file_mim_clean)
-load(file_ris_phys)
 
 % physiological case
 rate_constants_phys = CMIM.rates.std_values;
@@ -47,21 +49,15 @@ n_species = numel(x_0_phys);
 n_cons_laws = size(cons_laws, 1);
 ind_one = CMIM.matrix.ind_one;
 
-% max counter for NLPC
-max_counter = 500;
 
-% drug initial concentration
-init_drug1 = 50;
-init_drug2 = 240;
-
-%% Step 2. Compute physiological equilibrium
+%% 2. Compute physiological equilibrium
 rho=cons_laws*x_0_phys;
 
-% ris_phys = f_NLPC_restart(x_0_phys, rate_constants_phys, Sm, cons_laws, rho, idx_basic_species, ...
-%            vm, ind_one, max_counter, 0);
-x_eq_phys=x_values; %ris_phys.x;
+ris_phys = f_NLPC_restart(x_0_phys, rate_constants_phys, Sm, cons_laws, rho, idx_basic_species, ...
+           vm, ind_one, max_counter, 0);
+x_eq_phys=ris_phys.x;
 
-%% Step 3. Simulate mutation + drugs
+%% 3. Simulate mutation + drugs
 % 3.1. Add drugs to CRN
 
 [CMIM_drug, n_new_species1] = f_add_drug_Raf_from_file(CMIM, drug1);
@@ -102,14 +98,12 @@ v_drug=CMIM_drug.matrix.v;
 
 MIM_mut=f_compute_eq_mutated_CRN("Ras", CMIM_drug, idx_basic_species_drug, x_0_combo, rate_constants_combo);
 
+
+%%  4. SSI computation
 react_rem=MIM_mut.info.react_rem;
 x_e_drug_2=MIM_mut.species.x_eq;
-null_species=MIM_mut.species.null_species;
 
-%% Step 4. SSI computation
-
-x_e_drug_2(null_species)=0;
-idx_sp=find(x_e_drug_2);
+idx_sp=find(x_e_drug_2>10^-14);
 
 k_mut_drug=MIM_mut.rates.std_values;
 S_mut_drug=MIM_mut.matrix.S;
@@ -118,15 +112,14 @@ idx_basic_species_mut_drug=MIM_mut.species.idx_basic_species;
 v_mut_drug=MIM_mut.matrix.v;
 rho_mut_drug=cons_laws_mut_drug*x_0_combo;
 
-%% SSI TOTALI
+% SSI considering h=(k,c)
 SSI=f_compute_SSI_tot(idx_sp, x_e_drug_2, k_mut_drug,...
                                     S_mut_drug, cons_laws_mut_drug, rho_mut_drug,...
                                     idx_basic_species_mut_drug, v_mut_drug);
-%% SSI SINGOLI
+% SSI considering k and c separately
 [SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_e_drug_2, k_mut_drug,...
                                     S_mut_drug, cons_laws_mut_drug, rho_mut_drug,...
                                     idx_basic_species_mut_drug, v_mut_drug);
-%% PROVA PER ERKPP
 % ERKPP
 selected_proteins = {'ERKPP'};
 [aux_, idx_proteins] = ismember(selected_proteins, CMIM_drug.species.names);
@@ -179,7 +172,7 @@ for ii = 1:row_table
 end
 fclose(fileID);
 
-%% FIGURA DA MODIFICARE
+%% Figure
 
 [aa, bb]=sort(SSI_k, 'descend');
 [cc, TMT]=ismember((numel(k_mut_drug)-5):numel(k_mut_drug), bb);
@@ -213,7 +206,3 @@ xlabel('j')
 ylabel('e_j^c')
 title('SSI c per TMT+DBF')
 
-% confrontiamo i due farmaci
-% CL: chiara e coerente
-% R: che significato ha? -> far vedere solo le c
-% prova con dinamica?
