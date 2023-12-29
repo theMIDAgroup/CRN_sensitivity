@@ -44,7 +44,7 @@ else
     inv_eval_jac=inv(eval_jac);
 
     % 2.3. check inversion of jacobian
-
+    disp(det(eval_jac))
     if inv_eval_jac==Inf
         error('Cannot continue computing... ending function')
     else
@@ -54,20 +54,18 @@ else
         eval_jac_k=f_evaluate_jacobian_k(v, x_eq, S, idx_basic_species);
         eval_jac_c=f_evaluate_jacobian_c(n_species, n_cons_laws);
         
-        size(eval_jac_c)
-        
         Jac_k_xeq= -inv_eval_jac*eval_jac_k;
         Jac_c_xeq= -inv_eval_jac*eval_jac_c;
         
         % 2.5. row (=species ) selection
-        Jac_k_xeq=Jac_k_xeq(idx_sp, :);
-        Jac_c_xeq=Jac_c_xeq(idx_sp, :);
+        Jac_k_xeq=Jac_k_xeq(idx_sp,:);
+        Jac_c_xeq=Jac_c_xeq(idx_sp,:);
         x_eq=x_eq(idx_sp);
        
         % 2.6. computation of relative sensitivity matrix
         n_species_new=numel(x_eq);
         selection_k=min(n_species_new, numel(rate_constants));
-        selection_c=min(n_species_new, n_cons_laws);
+        selection_c=min(n_species_new, numel(rho));
         
         L_k=(1./x_eq).*(Jac_k_xeq).*(rate_constants');
         [~,D_k,V_k]=svd(L_k);
@@ -75,8 +73,6 @@ else
         eing_k=diag(D_k(1:selection_k, 1:selection_k)).^2;
         sum_eing_k=sum(eing_k);
         SSI_k =  ((V_k(:,1:selection_k).^2)*(eing_k))/sum_eing_k; %se presi con il quadrato: e_j=(L^T*L)_{jj}/sum_k(lambda_k)
-        
-        size(Jac_c_xeq)
         
         L_c=(1./x_eq).*(Jac_c_xeq).*(rho');
         [~,D_c,V_c]=svd(L_c);
