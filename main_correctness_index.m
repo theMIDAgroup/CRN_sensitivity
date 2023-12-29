@@ -10,47 +10,45 @@ warning('off', 'all')
 
 addpath('./funcs')
 
-%% Step 1. Load structure containing information on species and reactions
-file_crn = fullfile('data', 'CRC_CRN_nodrug.mat');
+%% 1. Load structure containing information on species and reactions
+file_crn = fullfile('data', 'CRC_CRN_nodrug_complete.mat');
 load(file_crn)
 
-%% Step 2. Import the initial data
-vm = new_CMIM.matrix.v;
-n_species = numel(new_CMIM.species.names);
-n_reactions = size(new_CMIM.matrix.S, 2);
-n_cons_laws = size(new_CMIM.matrix.Nl, 1);
-ind_one = new_CMIM.matrix.ind_one;
+%% 2. Initial data
+vm = CMIM.matrix.v;
+n_species = numel(CMIM.species.names);
+n_reactions = size(CMIM.matrix.S, 2);
+n_cons_laws = size(CMIM.matrix.Nl, 1);
+ind_one = CMIM.matrix.ind_one;
 
-k_values = new_CMIM.rates.std_values;
-Sm = new_CMIM.matrix.S;
-x_0 = new_CMIM.species.std_initial_values;
+k_values = CMIM.rates.std_values;
+Sm = CMIM.matrix.S;
+x_0 = CMIM.species.std_initial_values;
 idx_basic_species = find(x_0>0);
-cons_laws = new_CMIM.matrix.Nl;
+cons_laws = CMIM.matrix.Nl;
 rho=cons_laws*x_0;
 
 mut_lof=0;
-%% Step 3. Compute the values of the SSI
 
-%% 3.1. Compute equilibrium
 max_counter = 300;
-%ris_phys = f_NLPC_restart(x_0, k_values, Sm, cons_laws, rho, idx_basic_species, ...
-%           vm, ind_one, max_counter, 0);
-% x_values = ris_phys.x;
-file_x_phys = fullfile('results', 'x_phys.mat');
-load(file_x_phys)
-% save("./results/x_phys.mat","x_values")
-%% 3.2. Analytically compute the sensitivity matrix
+%% 3. Compute the values of the SSI
+
+% 3.1. Compute equilibrium
+
+ris_phys = f_NLPC_restart(x_0, k_values, Sm, cons_laws, rho, idx_basic_species, ...
+          vm, ind_one, max_counter, 0);
+x_values = ris_phys.x;
+
+% 3.2. Analytically compute the sensitivity matrix
 % Compute the analytic jacobian of v 
 idx_sp=1:numel(x_values);
 [SSI_k, SSI_c]=f_compute_SSI(idx_sp, x_values, k_values, ...
                                  Sm, cons_laws, rho, idx_basic_species, vm);
 
-%% Computation of equilibrium for different choices of k and c
+%% 4.  Computation of equilibrium for different choices of k and c
 delta_j = [0 1 2 5 10 20];  
 n_j = numel(delta_j);
 max_counter = 300;
-
-% 2 plots
 
 % Impact of increasing kinetic parameters referred to
 % maximum
@@ -69,7 +67,7 @@ ind_one=n_species+1;
 for ik = 1:n_j % Compute the equilibrium by varying the selected rate constants
    
    fprintf('Value of k num = %d \n', ik) % First rate constant
-   rates = new_CMIM.rates.std_values;
+   rates = CMIM.rates.std_values;
    rates(idx_k_high) = rates(idx_k_high)*(delta_j(ik)+1);  
    ris = f_NLPC_restart(x_0, rates, Sm, cons_laws, rho, idx_basic_species, ...
            vm, ind_one, max_counter, 0);
@@ -77,7 +75,7 @@ for ik = 1:n_j % Compute the equilibrium by varying the selected rate constants
 
    clear rates ris
 
-   rates = new_CMIM.rates.std_values;    % Second rate constant
+   rates = CMIM.rates.std_values;    % Second rate constant
    rates(idx_k_low) = rates(idx_k_low)*(delta_j(ik)+1);  
    ris = f_NLPC_restart(x_0, rates, Sm, cons_laws, rho, idx_basic_species, ...
            vm, ind_one, max_counter, 0);
@@ -86,7 +84,7 @@ for ik = 1:n_j % Compute the equilibrium by varying the selected rate constants
 
    clear rates ris
 
-   rates = new_CMIM.rates.std_values;    %Third rate constant
+   rates = CMIM.rates.std_values;    %Third rate constant
    rates(idx_k_mean) = rates(idx_k_mean)*(delta_j(ik)+1);   
    ris = f_NLPC_restart(x_0, rates, Sm, cons_laws, rho, idx_basic_species, ...
            vm, ind_one, max_counter, 0);
@@ -228,7 +226,7 @@ L.Position=[0.5, 0.479, 0.001, 0.001];
 % SSI on TP53 concentration
 
 selected_proteins = {'TP53'};
-[aux_, idx_proteins] = ismember(selected_proteins, new_CMIM.species.names);
+[aux_, idx_proteins] = ismember(selected_proteins, CMIM.species.names);
 
 [~, selpart_SSI]=f_compute_SSI(idx_proteins, x_values, k_values, ...
                                  Sm, cons_laws, rho, idx_basic_species, vm, mut_lof);
