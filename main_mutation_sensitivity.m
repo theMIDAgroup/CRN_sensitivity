@@ -76,7 +76,7 @@ for i=1:numel(protein)
     
     x_eq=ris_mut.(protein{i}).x_eq;
     
-    x_eq(ris_mut.(protein{i}).null_species)=0;
+    %x_eq(ris_mut.(protein{i}).null_species)=0;
     idx_sp=find(x_eq>toll);
     idx_sp_rem=setdiff(1:n_species, idx_sp);
     idx_sp_no_zero=find(ris_mut.(protein{i}).x_eq);
