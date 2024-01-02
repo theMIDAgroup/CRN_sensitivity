@@ -42,14 +42,16 @@ ris_phys=f_NLPC_restart(x_0_phys, k_values, Sm, cons_laws, rho_phys,...
     idx_basic_species, vm,idx_one, max_counter, 0);
 x_values = ris_phys.x;
 
+toll=10^-15;
+%% 3. Physiological status
+
 idx_sp_phys=1:numel(x_values);
-cl=1:numel(idx_basic_species);
 rho_phys=cons_laws*x_0_phys;
 [SSI_k_phys, SSI_c_phys]=f_compute_SSI(idx_sp_phys, x_values, k_values, ...
     Sm, cons_laws, rho_phys, idx_basic_species, vm);
 
 
-%% 3. Create the mutatated CRC
+%% 4. Create the mutatated CRC
 lof_mutation = {'APC', 'SMAD4'};
 gof_mutation = {'Ras'};
 lof_mutation_type2 = {'TP53'};
@@ -75,7 +77,7 @@ for i=1:numel(protein)
     x_eq=ris_mut.(protein{i}).x_eq;
     
     x_eq(ris_mut.(protein{i}).null_species)=0;
-    idx_sp=find(x_eq);
+    idx_sp=find(x_eq>toll);
     idx_sp_rem=setdiff(1:n_species, idx_sp);
     idx_sp_no_zero=find(ris_mut.(protein{i}).x_eq);
     
