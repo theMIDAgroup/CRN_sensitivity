@@ -155,14 +155,16 @@ norm_delta_x_mean_c = vecnorm(delta_x_eq_mean_c, 2, 1);
 
 
 %% Figure on sensitivity analysis of the CRC-CRN
-fprintf('# Rate constant with SSS > 0.001  ---> %d \n', sum(SSI_k > 0.001))
-fprintf('# Rate constant with SSS in [0.001, 10^-4]  ---> %d \n', ...
+fprintf('# Rate constant with SSI > 0.001  ---> %d \n', sum(SSI_k > 0.001))
+fprintf('# Rate constant with SSI in [0.001, 10^-4]  ---> %d \n', ...
     sum((10^-4 < SSI_k & SSI_k< 0.001)))
-fprintf('# Rate constant with SSS < 10^-4  ---> %d \n', sum(10^-4 > SSI_k))
+fprintf('# Rate constant with SSI < 10^-4  ---> %d \n', sum(10^-4 > SSI_k))
 
 
-fprintf('# c with SSS > 10^-2.5  ---> %d \n', sum(SSI_c > 10^(-2.5)))
-fprintf('# c with SSS < 10^-2.5  ---> %d \n', sum(SSI_c < 10^(-2.5)))
+fprintf('# c with SSI > 10^-2  ---> %d \n', sum(SSI_c > 10^(-2)))
+fprintf('# c with SSI in [10^-3, 10^-2]  ---> %d \n', ...
+    sum((10^-3 < SSI_c & SSI_c< 10^-2)))
+fprintf('# c with SSI < 10^-3  ---> %d \n', sum(SSI_c < 10^(-3)))
 
 figure_SSI_corrctness=figure('units','normalized','outerposition',[0 0  0.75 1]);
 
@@ -240,11 +242,11 @@ saveas(figure_SSI_corrctness, fullfile(folder_figures, 'figure2.png'))
 selected_proteins = {'TP53'};
 [aux_, idx_proteins] = ismember(selected_proteins, CMIM.species.names);
 [~, selpart_SSI]=f_compute_SSI(idx_proteins, x_values, k_values, ...
-                                 Sm, cons_laws, rho, idx_basic_species, vm, mut_lof);
+                                 Sm, cons_laws, rho, idx_basic_species, vm);
 
 %% Step 2. Table on the conservation laws' constant                             
 [temp_col, temp_raw] = find(cons_laws(:, idx_basic_species)');
-bsp_names = new_CMIM.species.names(idx_basic_species(temp_col));
+bsp_names = CMIM.species.names(idx_basic_species(temp_col));
     % First we reorder the elemental species based on the conservation
     % laws.
 [selpart_SSI_sorted, selpart_SSI_idx] = sort(selpart_SSI, 'descend');
