@@ -73,7 +73,7 @@ for i=1:numel(protein)
     ris_mut.(protein{i}).idx_basic_species=MIM_mut.species.idx_basic_species;
     ris_mut.(protein{i}).null_species=MIM_mut.info.null_species;
     ris_mut.(protein{i}).n_basic_mut=MIM_mut.info.n_basic_mut;
-    
+    ris_mut.(protein{i}).react_rem_lof=MIM_mut.info.react_rem_lof;
     x_eq=ris_mut.(protein{i}).x_eq;
     
     %x_eq(ris_mut.(protein{i}).null_species)=0;
@@ -94,7 +94,7 @@ for i=1:numel(protein)
         ris_mut.(protein{i}).S, MIM_mut.matrix.Nl, MIM_mut.matrix.rho, ...
         MIM_mut.species.idx_basic_species, MIM_mut.matrix.v);
 
-    clear MIM_mut
+    % clear MIM_mut
 end
 saveas(f_thresh, fullfile(folder_results, 'choose_threshold.png'))
 %% Graphs
@@ -105,6 +105,7 @@ for i=1:numel(protein)
     aux_SSI_k_phys=SSI_k_phys;
     aux_SSI_k=ris.(protein{i}).SSI_k;
     react_rem=ris_mut.(protein{i}).react_rem;
+    react_rem_2=ris_mut.(protein{i}).react_rem_lof;
     if string(protein(i))=="Ras"
         disp(protein(i))
         react_rem=ris_mut.Ras.react_rem;
@@ -119,6 +120,8 @@ for i=1:numel(protein)
         aux_SSI_k(less_sens)=[];
     end
     aux_SSI_k_phys(react_rem)=[];
+    aux_SSI_k_phys(react_rem_2)=[];
+    aux_SSI_k(react_rem_2)=[];
     [aux_SSI_k_phys_sort, order_phys]=sort(aux_SSI_k_phys, 'descend');
 
 
@@ -154,8 +157,8 @@ for i=1:numel(protein)
 
     end
 
-    xlim([1 size(ris_mut.(protein{i}).S,2)-numel(react_rem)])
-    xticks(0:200:size(ris_mut.(protein{i}).S,2)-numel(react_rem)) % controllare
+    xlim([1 size(ris_mut.(protein{i}).S,2)-max(numel(react_rem), numel(react_rem_2))])
+    xticks(0:200:size(ris_mut.(protein{i}).S,2)-max(numel(react_rem), numel(react_rem_2))) % controllare
     title(aux_title)
 
     lg = legend('Mutated', 'Phys', 'Location', 'southwest');
