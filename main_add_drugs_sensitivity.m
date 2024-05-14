@@ -197,12 +197,13 @@ for id = 1:n_drugs
         'Linewidth', 2, 'Displayname', all_drugs{id})
 end
 legend('show')
-ylabel('$e^\mathbf{k}_j$', 'Interpreter', 'Latex', 'Fontsize', 20)
-xlabel('Index j', 'Fontsize', 20)
+ylabel('$e^\mathbf{k}_j$', 'Interpreter', 'Latex', 'Fontsize', 20, 'FontName', 'Italic')
+xlabel('Index j', 'Fontsize', 20, 'FontName', 'Italic')
 set(gca, 'Fontsize', 15)
 % yticks(10^-5:10^1:10^0)
 % ylim([10^-5, 10^0])
 % xlim([1, size(cons_laws_mut_drug, 1)])
+
 
 
 
