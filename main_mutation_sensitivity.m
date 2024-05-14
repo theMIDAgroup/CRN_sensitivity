@@ -146,14 +146,14 @@ for i=1:numel(protein)
 
     switch i
         case 1
-            ylabel('e^k_j','FontSize', 20)
+            ylabel('e^k_j','FontSize', 20, 'FontName', 'Italic')
 
         case 3
-            ylabel('e^k_j','FontSize', 20)
-            xlabel('index j','FontSize', 20)
+            ylabel('e^k_j','FontSize', 20, 'FontName', 'Italic')
+            xlabel('index j','FontSize', 20, 'FontName', 'Italic')
 
         case 4
-            xlabel('index j','FontSize', 20)
+            xlabel('index j','FontSize', 20, 'FontName', 'Italic')
 
     end
 
@@ -197,21 +197,22 @@ for i=1:numel(protein)
 
     switch i
         case 1
-            ylabel('e^c_j','FontSize', 20)
+            ylabel('e^c_j','FontSize', 20, 'FontName', 'Italic')
         case 3
-            ylabel('e^c_j','FontSize', 20)
-            xlabel('index j', 'FontSize', 20)
+            ylabel('e^c_j','FontSize', 20, 'FontName', 'Italic')
+            xlabel('index j', 'FontSize', 20, 'FontName', 'Italic')
         case 4
-            xlabel('index j','FontSize', 20)
+            xlabel('index j','FontSize', 20, 'FontName', 'Italic')
     end
 
-    title(aux_title, 'FontSize', 20)
+    title(aux_title, 'FontSize', 20, 'FontName', 'Italic')
     xlim([1 ris_mut.(protein{i}).n_basic_mut])
     xticks(0:20:ris_mut.(protein{i}).n_basic_mut)
     ylim([10^-4, 1.1*10^-1])
 
     lg = legend('Mutated', 'Phys', 'Location', 'northeast');
     lg.FontSize = 20;
+   
 
 end
 saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
