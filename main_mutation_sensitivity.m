@@ -146,26 +146,27 @@ for i=1:numel(protein)
 
     switch i
         case 1
-            ylabel('e^k_j')
+            ylabel('e^k_j','FontSize', 20)
 
         case 3
-            ylabel('e^k_j')
-            xlabel('index j')
+            ylabel('e^k_j','FontSize', 20)
+            xlabel('index j','FontSize', 20)
 
         case 4
-            xlabel('index j')
+            xlabel('index j','FontSize', 20)
 
     end
 
     xlim([1 size(ris_mut.(protein{i}).S,2)-max(numel(react_rem), numel(react_rem_2))])
     xticks(0:200:size(ris_mut.(protein{i}).S,2)-max(numel(react_rem), numel(react_rem_2))) % controllare
-    title(aux_title)
+    title(aux_title,'FontSize', 20)
 
     lg = legend('Mutated', 'Phys', 'Location', 'southwest');
-    lg.FontSize = 18;
+    lg.FontSize = 20;
 
 end
 
+saveas(f_eff_mut_log_k, fullfile(folder_results, 'single_gene_mutations_k.png'))
 % SSI on c
 f_eff_mut_log_c = figure('units','normalized','outerposition',[0 0  0.75 1]);
 
@@ -196,21 +197,21 @@ for i=1:numel(protein)
 
     switch i
         case 1
-            ylabel('e^c_j')
+            ylabel('e^c_j','FontSize', 20)
         case 3
-            ylabel('e^c_j')
-            xlabel('index j')
+            ylabel('e^c_j','FontSize', 20)
+            xlabel('index j', 'FontSize', 20)
         case 4
-            xlabel('index j')
+            xlabel('index j','FontSize', 20)
     end
 
-    title(aux_title)
+    title(aux_title, 'FontSize', 20)
     xlim([1 ris_mut.(protein{i}).n_basic_mut])
     xticks(0:20:ris_mut.(protein{i}).n_basic_mut)
     ylim([10^-4, 1.1*10^-1])
 
     lg = legend('Mutated', 'Phys', 'Location', 'northeast');
-    lg.FontSize = 18;
+    lg.FontSize = 20;
 
 end
 saveas(f_eff_mut_log_c, fullfile(folder_results, 'single_gene_mutations_c.png'))
